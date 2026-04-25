@@ -59,38 +59,15 @@ public class TicTacToe extends JFrame implements ActionListener {
             
      String input = JOptionPane.showInputDialog(this, "Enter your name:");
 
-     String player = (input != null && !input.trim().isEmpty()) ? input : "Player";
+            String player = (input != null && !input.trim().isEmpty()) ? input.trim() : "Player";
 
-     String[] sides = {"Play as X", "Play as O"};
-
-         int side = JOptionPane.showOptionDialog(
-                 this,
-                "Choose your side",
-                "Side Selection",
-                JOptionPane.DEFAULT_OPTION,
-                 JOptionPane.QUESTION_MESSAGE,
-                 null,
-                sides,
-                sides[0]
-                );
-
-            if (side == 0) {
-                playerX = player;
-                playerO = "Computer";
-                xTurn = true;
-            } else {
-                playerO = player;
-                playerX = "Computer";
-                xTurn = true;
-            }
+            // ALWAYS PLAYER = X , COMPUTER = O
+            playerX = player;
+            playerO = "Computer";
+            xTurn = true;
         }
-         updateScore();
-    status.setText((xTurn ? playerX : playerO) + " Turn");
-    setVisible(true);
-
-    if (vsAI && playerX.equals("Computer")) {
-        aiMove();
-    }
+        updateScore();
+    status.setText(playerX + " Turn");
 
 //the main window setup
         setTitle("XO Game");
@@ -131,11 +108,12 @@ public class TicTacToe extends JFrame implements ActionListener {
 
         // Top panel
         JPanel topPanel = new JPanel();
-        topPanel.setLayout(new GridLayout(3, 1));
+        topPanel.setLayout(new BorderLayout());
         status.setHorizontalAlignment(SwingConstants.CENTER);
         status.setFont(new Font("Arial", Font.BOLD, 20)); 
+        status.setText(playerX + " Turn");
 
-        topPanel.add(status);
+        topPanel.add(status, BorderLayout.CENTER);
         add(topPanel, BorderLayout.NORTH);
 
         // Grid panel
@@ -210,10 +188,8 @@ public class TicTacToe extends JFrame implements ActionListener {
             String winner = xTurn ? playerX : playerO;
 
            status.setText(winner + " Wins!");
-             JOptionPane.showMessageDialog(this, winner + " Wins!");
-
-    disableButtons();
-
+           JOptionPane.showMessageDialog(this, winner + " Wins!");
+           disableButtons();
             return;
         }
 
@@ -228,33 +204,21 @@ public class TicTacToe extends JFrame implements ActionListener {
 
         xTurn = !xTurn;
         // Update status
-       if (vsAI) {
-        if (xTurn && playerX.equals("Computer")) {
-            status.setText("Computer thinking...");
-        } else if (!xTurn && playerO.equals("Computer")) {
-            status.setText("Computer thinking...");
-        } else {
+       if (!vsAI) {
             status.setText((xTurn ? playerX : playerO) + " Turn");
-        }
-            } else {
-                status.setText((xTurn ? playerX : playerO) + " Turn");
-            }
-
-// AI Move
-    if (vsAI) {
-
-    boolean isComputerTurn =
-            (playerX.equals("Computer") && xTurn) ||
-            (playerO.equals("Computer") && !xTurn);
-
-    if (isComputerTurn) {
-
-        SwingUtilities.invokeLater(() -> {
+        } else {
+            if (!xTurn) {
+                status.setText("Computer Turn");
+               Timer timer = new Timer(600, ev -> {
             aiMove();
-        });
+            });
+        timer.setRepeats(false);
+            timer.start();
+            } else {
+                status.setText(playerX + " Turn");
+            }
+        }
     }
-}
-}
 
   private boolean checkWin() {
     String p = xTurn ? "X" : "O";
@@ -327,12 +291,8 @@ public class TicTacToe extends JFrame implements ActionListener {
                 b.setBackground(Color.darkGray);
             }
         }
-        xTurn = true;
-       if (vsAI && playerX.equals("Computer")) {
-            status.setText("Computer Turn");
-        } else {
-            status.setText(playerX + " Turn");
-        }
+       xTurn = true;
+        status.setText(playerX + " Turn");
     }
     
   private void updateScore() {
@@ -348,12 +308,6 @@ public class TicTacToe extends JFrame implements ActionListener {
     updateScore();
     resetBoard();
 
-      if (vsAI && playerX.equals("Computer")) {
-            status.setText("Computer Turn");
-        } else {
-            status.setText(playerX + " Turn");
-        }
-
 }
    private void highlightWin(JButton b1, JButton b2, JButton b3) {
     Color hunterGreen = new Color(53, 94, 59); 
@@ -363,129 +317,151 @@ public class TicTacToe extends JFrame implements ActionListener {
     b3.setBackground(hunterGreen);
 }
   
-  private void aiMove() {
-    int bestScore = Integer.MIN_VALUE;
-    int bestRow = -1;
-    int bestCol = -1;
+ // ================== AI PART (HARD AI) ==================
+    private void aiMove() {
+        int bestScore = Integer.MIN_VALUE;
+        int bestRow = -1;
+        int bestCol = -1;
 
-   String ai = playerX.equals("Computer") ? "X" : "O";
-String human = ai.equals("X") ? "O" : "X";
-
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-
-            if (buttons[i][j].getText().equals("")) {
-
-                buttons[i][j].setText(ai);
-
-                int score = minimax(false, ai, human);
-
-                buttons[i][j].setText("");
-
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestRow = i;
-                    bestCol = j;
-                }
-            }
-        }
-    }
-
-   if (bestRow != -1 && bestCol != -1) {
-    buttons[bestRow][bestCol].setText(ai);
-}
-}
-
-   private int minimax(boolean isMaximizing, String ai, String human) {
-
-    String winner = getWinner();
-  // WIN CHECK
-    if (winner != null) {
-        if (winner.equals(ai)) return 10;
-        if (winner.equals(human)) return -10;
-        return 0;
-    }
-      // DRAW CHECK 
-    boolean full = true;
-
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            if (buttons[i][j].getText().equals("")) {
-                full = false;
-                break;
-            }
-        }
-    }
-    if (full) return 0;
-
-    if (isMaximizing) {
-        int best = Integer.MIN_VALUE;
+        String ai = "O";
+        String human = "X";
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
 
                 if (buttons[i][j].getText().equals("")) {
+
                     buttons[i][j].setText(ai);
-                    best = Math.max(best, minimax(false, ai, human));
+
+                    int score = minimax(false, ai, human);
+
                     buttons[i][j].setText("");
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestRow = i;
+                        bestCol = j;
+                    }
                 }
             }
         }
-        return best;
+        if (bestRow != -1 && bestCol != -1) {
+            buttons[bestRow][bestCol].setText(ai);
+
+            // AI WIN CHECK
+            xTurn = false;
+            if (checkWin()) {
+                oScore++;
+                updateScore();
+                status.setText(playerO + " Wins!");
+                JOptionPane.showMessageDialog(this, playerO + " Wins!");
+                disableButtons();
+                return;
+            }
+
+            // DRAW CHECK
+            if (checkDraw()) {
+                drawScore++;
+                updateScore();
+                status.setText("Draw!");
+                JOptionPane.showMessageDialog(this, "It's a Draw!");
+                disableButtons();
+                return;
+            }
+
+            // back to player
+            xTurn = true;
+            status.setText(playerX + " Turn");
+        }
     }
 
-    else {
-        int best = Integer.MAX_VALUE;
+    private int minimax(boolean isMaximizing, String ai, String human) {
 
+        String winner = getWinner();
+
+        if (winner != null) {
+            if (winner.equals(ai)) return 10;
+            if (winner.equals(human)) return -10;
+            return 0;
+        }
+
+        boolean full = true;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-
                 if (buttons[i][j].getText().equals("")) {
-                    buttons[i][j].setText(human);
-                    best = Math.min(best, minimax(true, ai, human));
-                    buttons[i][j].setText("");
+                    full = false;
+                    break;
                 }
             }
         }
-        return best;
-    }
-}  
+        if (full) return 0;
 
-private String getWinner() {
+        if (isMaximizing) {
+            int best = Integer.MIN_VALUE;
 
-    // rows
-    for (int i = 0; i < 3; i++) {
-        if (!buttons[i][0].getText().equals("") &&
-            buttons[i][0].getText().equals(buttons[i][1].getText()) &&
-            buttons[i][1].getText().equals(buttons[i][2].getText())) {
-            return buttons[i][0].getText();
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+
+                    if (buttons[i][j].getText().equals("")) {
+                        buttons[i][j].setText(ai);
+                        best = Math.max(best, minimax(false, ai, human));
+                        buttons[i][j].setText("");
+                    }
+                }
+            }
+            return best;
+        } else {
+            int best = Integer.MAX_VALUE;
+
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+
+                    if (buttons[i][j].getText().equals("")) {
+                        buttons[i][j].setText(human);
+                        best = Math.min(best, minimax(true, ai, human));
+                        buttons[i][j].setText("");
+                    }
+                }
+            }
+            return best;
         }
     }
 
-    // columns
-    for (int i = 0; i < 3; i++) {
-        if (!buttons[0][i].getText().equals("") &&
-            buttons[0][i].getText().equals(buttons[1][i].getText()) &&
-            buttons[1][i].getText().equals(buttons[2][i].getText())) {
-            return buttons[0][i].getText();
+    private String getWinner() {
+
+        // rows
+        for (int i = 0; i < 3; i++) {
+            if (!buttons[i][0].getText().equals("") &&
+                    buttons[i][0].getText().equals(buttons[i][1].getText()) &&
+                    buttons[i][1].getText().equals(buttons[i][2].getText())) {
+                return buttons[i][0].getText();
+            }
         }
-    }
 
-    // diagonals
-    if (!buttons[0][0].getText().equals("") &&
-        buttons[0][0].getText().equals(buttons[1][1].getText()) &&
-        buttons[1][1].getText().equals(buttons[2][2].getText())) {
-        return buttons[0][0].getText();
-    }
+        // columns
+        for (int i = 0; i < 3; i++) {
+            if (!buttons[0][i].getText().equals("") &&
+                    buttons[0][i].getText().equals(buttons[1][i].getText()) &&
+                    buttons[1][i].getText().equals(buttons[2][i].getText())) {
+                return buttons[0][i].getText();
+            }
+        }
 
-    if (!buttons[0][2].getText().equals("") &&
-        buttons[0][2].getText().equals(buttons[1][1].getText()) &&
-        buttons[1][1].getText().equals(buttons[2][0].getText())) {
-        return buttons[0][2].getText();
-    }
+        // diagonals
+        if (!buttons[0][0].getText().equals("") &&
+                buttons[0][0].getText().equals(buttons[1][1].getText()) &&
+                buttons[1][1].getText().equals(buttons[2][2].getText())) {
+            return buttons[0][0].getText();
+        }
 
-    return null;
-}
+        if (!buttons[0][2].getText().equals("") &&
+                buttons[0][2].getText().equals(buttons[1][1].getText()) &&
+                buttons[1][1].getText().equals(buttons[2][0].getText())) {
+            return buttons[0][2].getText();
+        }
+
+        return null;
+    }
     public static void main(String[] args) {
         new TicTacToe();
         setDefaultLookAndFeelDecorated(true);
